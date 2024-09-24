@@ -1,7 +1,10 @@
 use crate::{
     exchange::bybit::Bybit,
     subscription::{
-        book::{OrderBooksL1, OrderBooksL2}, liquidation::Liquidations, trade::PublicTrades, Subscription
+        book::{OrderBooksL1, OrderBooksL2},
+        liquidation::Liquidations,
+        trade::PublicTrades,
+        Subscription,
     },
     Identifier,
 };

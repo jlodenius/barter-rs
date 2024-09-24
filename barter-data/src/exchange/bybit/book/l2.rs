@@ -45,7 +45,6 @@ pub struct BybitOrderBookL2 {
     pub ret_code: i64,
     #[serde(rename = "retMsg")]
     pub ret_msg: String,
-    #[serde(rename = "result")]
     pub result: BybitOrderBookL2Result,
     #[serde(
         alias = "time",

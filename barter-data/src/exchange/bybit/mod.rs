@@ -14,6 +14,7 @@ use crate::{
     ExchangeWsStream,
 };
 use barter_integration::{error::SocketError, protocol::websocket::WsMessage};
+use book::l1::BybitOrderBookL1;
 use futures::l2::BybitPerpetualsOrderBookL2;
 use serde::de::{Error, Unexpected};
 use std::{fmt::Debug, marker::PhantomData, time::Duration};
@@ -127,7 +128,7 @@ where
     Server: ExchangeServer + Debug + Send + Sync,
 {
     type Stream = ExchangeWsStream<
-        StatelessTransformer<Self, Instrument::Id, OrderBooksL1, BybitPerpetualsOrderBookL2>,
+        StatelessTransformer<Self, Instrument::Id, OrderBooksL1, BybitOrderBookL1>,
     >;
 }
 

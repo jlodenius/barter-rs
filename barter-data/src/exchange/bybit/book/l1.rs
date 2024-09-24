@@ -1,19 +1,59 @@
 use crate::{
     event::{MarketEvent, MarketIter},
-    exchange::{bybit::futures::l2::BybitPerpetualsOrderBookL2, ExchangeId},
+    exchange::{bybit::channel::BybitChannel, subscription::ExchangeSub, ExchangeId},
     subscription::book::{Level, OrderBookL1},
+    Identifier,
 };
-use barter_integration::model::Exchange;
-use chrono::Utc;
+use barter_integration::model::{Exchange, SubscriptionId};
+use chrono::{DateTime, Utc};
+use serde::{Deserialize, Serialize};
 
 use super::BybitLevel;
 
-impl<InstrumentId> From<(ExchangeId, InstrumentId, BybitPerpetualsOrderBookL2)>
+#[derive(Clone, PartialEq, PartialOrd, Debug, Deserialize, Serialize)]
+pub struct BybitPerpetualsOrderBookL1Data {
+    #[serde(alias = "s", deserialize_with = "de_ob_l1_subscription_id")]
+    pub subscription_id: SubscriptionId,
+    #[serde(alias = "b")]
+    pub bids: Vec<BybitLevel>,
+    #[serde(alias = "a")]
+    pub asks: Vec<BybitLevel>,
+    #[serde(alias = "u")]
+    pub update_id: u64,
+    #[serde(alias = "seq")]
+    pub sequence: u64,
+}
+
+#[derive(Clone, PartialEq, PartialOrd, Debug, Deserialize, Serialize)]
+pub struct BybitOrderBookL1 {
+    #[serde(alias = "topic")]
+    pub topic: String,
+    #[serde(
+        alias = "ts",
+        deserialize_with = "barter_integration::de::de_u64_epoch_ms_as_datetime_utc",
+        default = "Utc::now"
+    )]
+    pub time: DateTime<Utc>,
+    #[serde(alias = "data")]
+    pub data: BybitPerpetualsOrderBookL1Data,
+    #[serde(
+        alias = "cts",
+        deserialize_with = "barter_integration::de::de_u64_epoch_ms_as_datetime_utc",
+        default = "Utc::now"
+    )]
+    pub created_time: DateTime<Utc>,
+}
+
+impl Identifier<Option<SubscriptionId>> for BybitOrderBookL1 {
+    fn id(&self) -> Option<SubscriptionId> {
+        Some(self.data.subscription_id.clone())
+    }
+}
+
+impl<InstrumentId> From<(ExchangeId, InstrumentId, BybitOrderBookL1)>
     for MarketIter<InstrumentId, OrderBookL1>
 {
-    fn from(
-        (exchange_id, instrument, book): (ExchangeId, InstrumentId, BybitPerpetualsOrderBookL2),
-    ) -> Self {
+    fn from((exchange_id, instrument, book): (ExchangeId, InstrumentId, BybitOrderBookL1)) -> Self {
         let best_bid = book.data.bids.first().unwrap_or(&BybitLevel {
             price: 0.0,
             amount: 0.0,
@@ -35,4 +75,15 @@ impl<InstrumentId> From<(ExchangeId, InstrumentId, BybitPerpetualsOrderBookL2)>
             },
         })])
     }
+}
+
+/// Deserialize a [`BybitOrderBookL2`] "s" (eg/ "BTCUSDT") as the associated [`SubscriptionId`].
+///
+/// eg/ "orderbook.50.BTCUSDT"
+pub fn de_ob_l1_subscription_id<'de, D>(deserializer: D) -> Result<SubscriptionId, D::Error>
+where
+    D: serde::de::Deserializer<'de>,
+{
+    <&str as Deserialize>::deserialize(deserializer)
+        .map(|market| ExchangeSub::from((BybitChannel::ORDER_BOOK_L1, market)).id())
 }
