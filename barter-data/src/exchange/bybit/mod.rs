@@ -7,7 +7,7 @@ use crate::{
         subscription::ExchangeSub,
         Connector, ExchangeId, ExchangeServer, PingInterval, StreamSelector,
     },
-    instrument::{InstrumentData, InstrumentId},
+    instrument::InstrumentData,
     subscriber::{validator::WebSocketSubValidator, WebSocketSubscriber},
     subscription::{book::OrderBooksL1, trade::PublicTrades, Map},
     transformer::stateless::StatelessTransformer,
