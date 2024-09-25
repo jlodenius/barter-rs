@@ -1,4 +1,4 @@
-use super::super::book::{l2::BybitOrderBookL2, BybitLevel};
+use super::super::book::BybitLevel;
 use crate::{
     error::DataError,
     exchange::{bybit::channel::BybitChannel, subscription::ExchangeSub},
@@ -8,7 +8,6 @@ use crate::{
 };
 use async_trait::async_trait;
 use barter_integration::{
-    error::SocketError,
     model::{instrument::Instrument, Side, SubscriptionId},
     protocol::websocket::WsMessage,
 };
@@ -97,20 +96,18 @@ impl Identifier<Option<SubscriptionId>> for BybitPerpetualsOrderBookL2 {
 /// [`Bybit`](super::super::Bybit) [`BybitServerFuturesUsd`](super::BybitServerFuturesUsd)
 /// [`OrderBookUpdater`].
 ///
-#[derive(Copy, Clone, Eq, PartialEq, Ord, PartialOrd, Hash, Debug, Deserialize, Serialize)]
+#[derive(
+    Copy, Clone, Eq, PartialEq, Ord, PartialOrd, Hash, Debug, Default, Deserialize, Serialize,
+)]
 pub struct BybitPerpetualsBookUpdater {
     pub last_update_id: u64,
-    pub last_sequence: u64,
 }
 
 impl BybitPerpetualsBookUpdater {
     /// Construct a new BybitPerpetuals [`OrderBookUpdater`] using the provided last_update_id from
     /// a HTTP snapshot.
-    pub fn new(last_update_id: u64, last_sequence: u64) -> Self {
-        Self {
-            last_update_id,
-            last_sequence,
-        }
+    pub fn new() -> Self {
+        Default::default()
     }
 
     pub fn validate_next_update(
@@ -125,7 +122,7 @@ impl BybitPerpetualsBookUpdater {
         } else {
             Err(DataError::InvalidSequence {
                 prev_last_update_id: self.last_update_id,
-                first_update_id: update.data.update_id, // TODO
+                first_update_id: update.data.update_id,
             })
         }
     }
@@ -144,26 +141,16 @@ impl OrderBookUpdater for BybitPerpetualsBookUpdater {
         Exchange: Send,
         Kind: Send,
     {
-        // Construct initial OrderBook snapshot GET url
-        let snapshot_url = format!(
-            "{}?category=linear&symbol={}{}&limit=100",
-            HTTP_BOOK_L2_SNAPSHOT_URL_BYBIT,
-            instrument.base.as_ref().to_uppercase(),
-            instrument.quote.as_ref().to_uppercase()
-        );
-
-        // Fetch initial OrderBook snapshot via HTTP
-        let snapshot = reqwest::get(snapshot_url)
-            .await
-            .map_err(SocketError::Http)?
-            .json::<BybitOrderBookL2>()
-            .await
-            .map_err(SocketError::Http)?;
-
+        // Initial orderbook is empty since the snapshot comes from the first message in the
+        // websocket
         Ok(InstrumentOrderBook {
             instrument,
-            updater: Self::new(snapshot.result.last_update_id, snapshot.result.sequence),
-            book: OrderBook::from(snapshot),
+            updater: Self::new(),
+            book: OrderBook {
+                last_update_time: Utc::now(),
+                bids: OrderBookSide::new(Side::Buy, Vec::<BybitLevel>::new()),
+                asks: OrderBookSide::new(Side::Sell, Vec::<BybitLevel>::new()),
+            },
         })
     }
 
@@ -194,7 +181,6 @@ impl OrderBookUpdater for BybitPerpetualsBookUpdater {
 
         // Update OrderBookUpdater metadata
         self.last_update_id = update.data.update_id;
-        self.last_sequence = update.data.sequence;
 
         Ok(Some(book.snapshot()))
     }
@@ -347,7 +333,6 @@ mod tests {
                     // TC0: valid next update
                     updater: BybitPerpetualsBookUpdater {
                         last_update_id: 100,
-                        last_sequence: 0,
                     },
                     input: BybitPerpetualsOrderBookL2 {
                         topic: "orderbook.50.BTCUSDT".to_string(),
@@ -368,7 +353,6 @@ mod tests {
                     // TC1: invalid update_id
                     updater: BybitPerpetualsBookUpdater {
                         last_update_id: 100,
-                        last_sequence: 0,
                     },
                     input: BybitPerpetualsOrderBookL2 {
                         topic: "orderbook.50.BTCUSDT".to_string(),
@@ -423,7 +407,6 @@ mod tests {
                     // TC0: Drop any event where u is < lastUpdateId in the snapshot
                     updater: BybitPerpetualsBookUpdater {
                         last_update_id: 100,
-                        last_sequence: 0,
                     },
                     book: OrderBook {
                         last_update_time: time,
@@ -449,7 +432,6 @@ mod tests {
                     // TC1: valid update with sorted snapshot generated
                     updater: BybitPerpetualsBookUpdater {
                         last_update_id: 100,
-                        last_sequence: 0,
                     },
                     book: OrderBook {
                         last_update_time: time,
