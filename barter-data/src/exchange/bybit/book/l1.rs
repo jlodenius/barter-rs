@@ -26,7 +26,6 @@ pub struct BybitPerpetualsOrderBookL1Data {
 
 #[derive(Clone, PartialEq, PartialOrd, Debug, Deserialize, Serialize)]
 pub struct BybitOrderBookL1 {
-    #[serde(alias = "topic")]
     pub topic: String,
     #[serde(
         alias = "ts",
@@ -34,7 +33,6 @@ pub struct BybitOrderBookL1 {
         default = "Utc::now"
     )]
     pub time: DateTime<Utc>,
-    #[serde(alias = "data")]
     pub data: BybitPerpetualsOrderBookL1Data,
     #[serde(
         alias = "cts",
@@ -77,9 +75,9 @@ impl<InstrumentId> From<(ExchangeId, InstrumentId, BybitOrderBookL1)>
     }
 }
 
-/// Deserialize a [`BybitOrderBookL2`] "s" (eg/ "BTCUSDT") as the associated [`SubscriptionId`].
+/// Deserialize a [`BybitOrderBookL1`] "s" (eg/ "BTCUSDT") as the associated [`SubscriptionId`].
 ///
-/// eg/ "orderbook.50.BTCUSDT"
+/// eg/ "orderbook.1.BTCUSDT"
 pub fn de_ob_l1_subscription_id<'de, D>(deserializer: D) -> Result<SubscriptionId, D::Error>
 where
     D: serde::de::Deserializer<'de>,

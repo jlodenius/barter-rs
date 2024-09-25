@@ -48,7 +48,6 @@ pub const HTTP_BOOK_L2_SNAPSHOT_URL_BYBIT: &str = "https://api.bybit.com/v5/mark
 /// ```
 #[derive(Clone, PartialEq, PartialOrd, Debug, Deserialize, Serialize)]
 pub struct BybitPerpetualsOrderBookL2 {
-    #[serde(alias = "topic")]
     pub topic: String,
     #[serde(alias = "type")]
     pub r#type: BybitPerpetualsOrderBookL2Type,
@@ -58,7 +57,6 @@ pub struct BybitPerpetualsOrderBookL2 {
         default = "Utc::now"
     )]
     pub time: DateTime<Utc>,
-    #[serde(alias = "data")]
     pub data: BybitPerpetualsOrderBookL2Data,
     #[serde(
         alias = "cts",
@@ -256,8 +254,9 @@ mod tests {
             }
         "#;
 
-        let time = datetime_utc_from_epoch_duration(Duration::from_millis(1687940967466));
-        let created_time = datetime_utc_from_epoch_duration(Duration::from_millis(1687940967464));
+            let time = datetime_utc_from_epoch_duration(Duration::from_millis(1687940967466));
+            let created_time =
+                datetime_utc_from_epoch_duration(Duration::from_millis(1687940967464));
 
             assert_eq!(
                 serde_json::from_str::<BybitPerpetualsOrderBookL2>(input).unwrap(),

@@ -40,14 +40,12 @@ use serde::{Deserialize, Serialize};
 /// }
 /// ```
 #[derive(Clone, PartialEq, PartialOrd, Debug, Deserialize, Serialize)]
+#[serde(rename_all = "camelCase")]
 pub struct BybitOrderBookL2 {
-    #[serde(rename = "retCode")]
     pub ret_code: i64,
-    #[serde(rename = "retMsg")]
     pub ret_msg: String,
     pub result: BybitOrderBookL2Result,
     #[serde(
-        alias = "time",
         deserialize_with = "barter_integration::de::de_u64_epoch_ms_as_datetime_utc",
         default = "Utc::now"
     )]
