@@ -15,7 +15,6 @@ use crate::{
 };
 use barter_integration::{error::SocketError, protocol::websocket::WsMessage};
 use book::l1::BybitOrderBookL1;
-use futures::l2::BybitPerpetualsOrderBookL2;
 use serde::de::{Error, Unexpected};
 use std::{fmt::Debug, marker::PhantomData, time::Duration};
 use tokio::time;
