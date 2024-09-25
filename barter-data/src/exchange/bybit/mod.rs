@@ -7,7 +7,7 @@ use crate::{
         subscription::ExchangeSub,
         Connector, ExchangeId, ExchangeServer, PingInterval, StreamSelector,
     },
-    instrument::InstrumentData,
+    instrument::{InstrumentData, InstrumentId},
     subscriber::{validator::WebSocketSubValidator, WebSocketSubscriber},
     subscription::{book::OrderBooksL1, trade::PublicTrades, Map},
     transformer::stateless::StatelessTransformer,
@@ -107,8 +107,18 @@ where
         )]
     }
 
-    fn expected_responses<InstrumentId>(_: &Map<InstrumentId>) -> usize {
-        1
+    // TODO: clean this up, must be a better way of doing this. Bybit OrderBooksL2 doesn't return a
+    // success message, instead it returns the snapshot as a first message.
+    fn expected_responses<InstrumentId>(map: &Map<InstrumentId>) -> usize {
+        let subscription_id = map.0.iter().next().expect("atleast one sub").0;
+        match subscription_id.0.as_str() {
+            // Top of book
+            s if s.starts_with("orderbook.1") => 1,
+            // Orderbook l2
+            s if s.starts_with("orderbook") => 0,
+            // Everything else, public trades etc
+            _ => 1,
+        }
     }
 }
 
