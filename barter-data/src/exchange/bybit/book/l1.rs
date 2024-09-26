@@ -11,7 +11,7 @@ use serde::{Deserialize, Serialize};
 use super::BybitLevel;
 
 #[derive(Clone, PartialEq, PartialOrd, Debug, Deserialize, Serialize)]
-pub struct BybitPerpetualsOrderBookL1Data {
+pub struct BybitOrderBookL1Data {
     #[serde(alias = "s", deserialize_with = "de_ob_l1_subscription_id")]
     pub subscription_id: SubscriptionId,
     #[serde(alias = "b")]
@@ -33,7 +33,7 @@ pub struct BybitOrderBookL1 {
         default = "Utc::now"
     )]
     pub time: DateTime<Utc>,
-    pub data: BybitPerpetualsOrderBookL1Data,
+    pub data: BybitOrderBookL1Data,
     #[serde(
         alias = "cts",
         deserialize_with = "barter_integration::de::de_u64_epoch_ms_as_datetime_utc",
