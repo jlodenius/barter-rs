@@ -1,13 +1,17 @@
 use super::super::book::BybitLevel;
 use crate::{
     error::DataError,
-    exchange::{bybit::channel::BybitChannel, subscription::ExchangeSub},
+    exchange::{
+        bybit::{book::l2::BybitOrderBookL2, channel::BybitChannel},
+        subscription::ExchangeSub,
+    },
     subscription::book::{OrderBook, OrderBookSide},
     transformer::book::{InstrumentOrderBook, OrderBookUpdater},
     Identifier,
 };
 use async_trait::async_trait;
 use barter_integration::{
+    error::SocketError,
     model::{instrument::Instrument, Side, SubscriptionId},
     protocol::websocket::WsMessage,
 };
@@ -96,25 +100,31 @@ impl Identifier<Option<SubscriptionId>> for BybitPerpetualsOrderBookL2 {
 /// [`Bybit`](super::super::Bybit) [`BybitServerFuturesUsd`](super::BybitServerFuturesUsd)
 /// [`OrderBookUpdater`].
 ///
-#[derive(
-    Copy, Clone, Eq, PartialEq, Ord, PartialOrd, Hash, Debug, Default, Deserialize, Serialize,
-)]
+#[derive(Copy, Clone, Eq, PartialEq, Ord, PartialOrd, Hash, Debug, Deserialize, Serialize)]
 pub struct BybitPerpetualsBookUpdater {
     pub last_update_id: u64,
 }
 
 impl BybitPerpetualsBookUpdater {
-    /// Construct a new BybitPerpetuals [`OrderBookUpdater`] using the provided last_update_id from
-    /// a HTTP snapshot.
+    /// Construct a new BybitPerpetuals [`OrderBookUpdater`]
+    ///
+    /// ### Notes
+    /// We set last_update_id to 0 to indicate that the book is initialized from a snapshot in
+    /// order to ignore the sequence validation on the first delta message. This is because HTTP
+    /// snapshots and websocket deltas have completely different update_id's so they can't be
+    /// compared.
     pub fn new() -> Self {
-        Default::default()
+        Self { last_update_id: 0 }
     }
 
     pub fn validate_next_update(
         &self,
         update: &BybitPerpetualsOrderBookL2,
     ) -> Result<(), DataError> {
-        if update.r#type == BybitPerpetualsOrderBookL2Type::Snapshot {
+        // Last update id will only be 0 if a snapshot is being sent or if it is the first update
+        // after fetching the initial HTTP snapshot, in which case we want to ignore sequence
+        // validation for reason stated above.
+        if update.r#type == BybitPerpetualsOrderBookL2Type::Snapshot || self.last_update_id == 0 {
             return Ok(());
         }
         if update.data.update_id == self.last_update_id + 1 {
@@ -141,16 +151,31 @@ impl OrderBookUpdater for BybitPerpetualsBookUpdater {
         Exchange: Send,
         Kind: Send,
     {
-        // Initial orderbook is empty since the snapshot comes from the first message in the
-        // websocket
+        // Construct initial OrderBook snapshot GET url
+        let snapshot_url = format!(
+            "{}?category=linear&symbol={}{}&limit=50",
+            HTTP_BOOK_L2_SNAPSHOT_URL_BYBIT,
+            instrument.base.as_ref().to_uppercase(),
+            instrument.quote.as_ref().to_uppercase()
+        );
+
+        // Fetch initial OrderBook snapshot via HTTP
+        //
+        // Notes:
+        // This is a necessary workaround because the websocket success response can arrive after
+        // the initial snapshot. And the `WebSocketSubValidator` consumes all messages prior to the
+        // success, so the snapshot never gets here.
+        let snapshot = reqwest::get(snapshot_url)
+            .await
+            .map_err(SocketError::Http)?
+            .json::<BybitOrderBookL2>()
+            .await
+            .map_err(SocketError::Http)?;
+
         Ok(InstrumentOrderBook {
             instrument,
             updater: Self::new(),
-            book: OrderBook {
-                last_update_time: Utc::now(),
-                bids: OrderBookSide::new(Side::Buy, Vec::<BybitLevel>::new()),
-                asks: OrderBookSide::new(Side::Sell, Vec::<BybitLevel>::new()),
-            },
+            book: OrderBook::from(snapshot),
         })
     }
 

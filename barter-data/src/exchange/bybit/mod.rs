@@ -107,18 +107,8 @@ where
         )]
     }
 
-    // TODO: clean this up, must be a better way of doing this. Bybit OrderBooksL2 doesn't return a
-    // success message, instead it returns the snapshot as a first message.
-    fn expected_responses<InstrumentId>(map: &Map<InstrumentId>) -> usize {
-        let subscription_id = map.0.iter().next().expect("atleast one sub").0;
-        match subscription_id.0.as_str() {
-            // OrderBookL1
-            s if s.starts_with("orderbook.1") => 1,
-            // OrderBookL2
-            s if s.starts_with("orderbook") => 0,
-            // Everything else, PublicTrades etc.
-            _ => 1,
-        }
+    fn expected_responses<InstrumentId>(_: &Map<InstrumentId>) -> usize {
+        1
     }
 }
 
