@@ -112,11 +112,11 @@ where
     fn expected_responses<InstrumentId>(map: &Map<InstrumentId>) -> usize {
         let subscription_id = map.0.iter().next().expect("atleast one sub").0;
         match subscription_id.0.as_str() {
-            // Top of book
+            // OrderBookL1
             s if s.starts_with("orderbook.1") => 1,
-            // Orderbook l2
+            // OrderBookL2
             s if s.starts_with("orderbook") => 0,
-            // Everything else, public trades etc
+            // Everything else, PublicTrades etc.
             _ => 1,
         }
     }
