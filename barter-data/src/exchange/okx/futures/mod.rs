@@ -1,4 +1,4 @@
-use super::{book::l1::OkxFuturesOrderBookL1, Okx};
+use super::{book::l1::OkxOrderBookDataL1, trade::OkxMessage, Okx};
 use crate::{
     exchange::StreamSelector,
     subscription::book::{OrderBooksL1, OrderBooksL2},
@@ -17,7 +17,7 @@ pub mod l2;
 
 impl StreamSelector<Instrument, OrderBooksL1> for Okx {
     type Stream = ExchangeWsStream<
-        StatelessTransformer<Self, Instrument, OrderBooksL1, OkxFuturesOrderBookL1>,
+        StatelessTransformer<Self, Instrument, OrderBooksL1, OkxMessage<OkxOrderBookDataL1>>,
     >;
 }
 

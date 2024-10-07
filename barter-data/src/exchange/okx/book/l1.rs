@@ -1,9 +1,5 @@
 use super::OkxLevel;
-use crate::{
-    exchange::okx::trade::de_okx_message_arg_as_subscription_id, subscription::book::OrderBookL1,
-    Identifier,
-};
-use barter_integration::model::SubscriptionId;
+use crate::subscription::book::OrderBookL1;
 use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
 
@@ -20,22 +16,6 @@ pub struct OkxOrderBookDataL1 {
     pub seq_id: i64,
 }
 
-#[derive(Debug, Deserialize, Serialize, PartialEq)]
-pub struct OkxFuturesOrderBookL1 {
-    #[serde(
-        rename = "arg",
-        deserialize_with = "de_okx_message_arg_as_subscription_id"
-    )]
-    pub subscription_id: SubscriptionId,
-    pub data: Vec<OkxOrderBookDataL1>,
-}
-
-impl Identifier<Option<SubscriptionId>> for OkxFuturesOrderBookL1 {
-    fn id(&self) -> Option<SubscriptionId> {
-        Some(self.subscription_id.clone())
-    }
-}
-
 impl From<OkxOrderBookDataL1> for OrderBookL1 {
     fn from(data: OkxOrderBookDataL1) -> Self {
         Self {
@@ -49,8 +29,11 @@ impl From<OkxOrderBookDataL1> for OrderBookL1 {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use barter_integration::model::SubscriptionId;
 
     mod de {
+        use crate::exchange::okx::trade::OkxMessage;
+
         use super::*;
 
         #[test]
@@ -81,8 +64,8 @@ mod tests {
             "#;
 
             assert_eq!(
-                serde_json::from_str::<OkxFuturesOrderBookL1>(input).unwrap(),
-                OkxFuturesOrderBookL1 {
+                serde_json::from_str::<OkxMessage<OkxOrderBookDataL1>>(input).unwrap(),
+                OkxMessage {
                     subscription_id: SubscriptionId::from("bbo-tbt|BCH-USDT-SWAP"),
                     data: vec![OkxOrderBookDataL1 {
                         time: DateTime::<Utc>::from_timestamp_millis(1670324386802).unwrap(),
