@@ -20,17 +20,17 @@ async fn main() {
 
     let streams = DynamicStreams::init([
         vec![
-            // (BybitPerpetualsUsd, "btc", "usdt", Perpetual, PublicTrades),
-            // (BybitPerpetualsUsd, "btc", "usdt", Perpetual, OrderBooksL1),
-            // (BybitPerpetualsUsd, "btc", "usdt", Perpetual, OrderBooksL2),
+            (BybitPerpetualsUsd, "btc", "usdt", Perpetual, PublicTrades),
+            (BybitPerpetualsUsd, "btc", "usdt", Perpetual, OrderBooksL1),
+            (BybitPerpetualsUsd, "btc", "usdt", Perpetual, OrderBooksL2),
             (BybitPerpetualsUsd, "btc", "usdt", Perpetual, Liquidations),
         ],
 
         vec![
-            // (BybitPerpetualsUsd, "eth", "usdt", Perpetual, PublicTrades),
-            // (BybitPerpetualsUsd, "eth", "usdt", Perpetual, OrderBooksL1),
-            // (BybitPerpetualsUsd, "eth", "usdt", Perpetual, OrderBooksL2),
-            // (BybitPerpetualsUsd, "eth", "usdt", Perpetual, Liquidations),
+            (BybitPerpetualsUsd, "eth", "usdt", Perpetual, PublicTrades),
+            (BybitPerpetualsUsd, "eth", "usdt", Perpetual, OrderBooksL1),
+            (BybitPerpetualsUsd, "eth", "usdt", Perpetual, OrderBooksL2),
+            (BybitPerpetualsUsd, "eth", "usdt", Perpetual, Liquidations),
         ],
     ]).await.unwrap();
 
