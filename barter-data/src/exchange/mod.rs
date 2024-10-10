@@ -235,7 +235,7 @@ impl ExchangeId {
             (
                 BybitPerpetualsUsd,
                 Perpetual,
-                PublicTrades | PublicAggregatedTrades | OrderBooksL1 | Liquidations,
+                PublicTrades | PublicAggregatedTrades | OrderBooksL1 | OrderBooksL2 | Liquidations,
             ) => true,
             (Coinbase, Spot, PublicTrades) => true,
             (GateioSpot, Spot, PublicTrades) => true,
@@ -245,7 +245,11 @@ impl ExchangeId {
             (GateioPerpetualsBtc, Perpetual, PublicTrades) => true,
             (GateioOptions, Option(_), PublicTrades) => true,
             (Kraken, Spot, PublicTrades | OrderBooksL1) => true,
-            (Okx, Spot | Future(_) | Perpetual | Option(_), PublicTrades) => true,
+            (
+                Okx,
+                Spot | Future(_) | Perpetual | Option(_),
+                PublicTrades | PublicAggregatedTrades | OrderBooksL1 | OrderBooksL2,
+            ) => true,
 
             (_, _, _) => false,
         }
