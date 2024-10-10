@@ -7,12 +7,23 @@ use crate::{
     subscriber::{validator::WebSocketSubValidator, WebSocketSubscriber},
     subscription::trade::PublicTrades,
     transformer::stateless::StatelessTransformer,
-    ExchangeWsStream,
 };
-use barter_integration::{error::SocketError, protocol::websocket::WsMessage};
+use barter_integration::{
+    error::SocketError,
+    protocol::{
+        websocket::{
+            process_binary, process_close_frame, process_frame, process_ping, process_pong,
+            WebSocket, WsError, WsMessage, WsStream,
+        },
+        StreamParser,
+    },
+    ExchangeStream,
+};
 use barter_macro::{DeExchange, SerExchange};
+use serde::{de::DeserializeOwned, Deserialize, Serialize};
 use serde_json::json;
 use std::time::Duration;
+use tracing::debug;
 use url::Url;
 
 /// Defines the type that translates a Barter [`Subscription`](crate::subscription::Subscription)
@@ -29,6 +40,12 @@ pub mod subscription;
 
 /// Public trade types for [`Okx`].
 pub mod trade;
+
+/// Futures types for [`Okx`].
+pub mod futures;
+
+/// OrderBook type for [`Okx`].
+pub mod book;
 
 /// [`Okx`] server base url.
 ///
@@ -78,10 +95,62 @@ impl Connector for Okx {
     }
 }
 
+/// Custom stream parser to handle OKX non-json plain text Pongs
+#[derive(Copy, Clone, Eq, PartialEq, Ord, PartialOrd, Hash, Debug, Deserialize, Serialize)]
+pub struct OkxWebSocketParser;
+
+impl StreamParser for OkxWebSocketParser {
+    type Stream = WebSocket;
+    type Message = WsMessage;
+    type Error = WsError;
+
+    fn parse<Output>(
+        payload: Result<Self::Message, Self::Error>,
+    ) -> Option<Result<Output, SocketError>>
+    where
+        Output: DeserializeOwned,
+    {
+        match payload {
+            Ok(ws_message) => match ws_message {
+                // Custom OKX handler for text payloads. Pong's are sent as plain text and
+                // are not valid json, and so can't be deserialized using serde_json.
+                WsMessage::Text(payload) => match serde_json::from_str::<Output>(&payload) {
+                    Ok(value) => Some(Ok(value)),
+                    Err(error) => {
+                        // Check if Pong only when initial de fails, this is the only custom logic
+                        // for this parser
+                        if payload == "pong" {
+                            None
+                        } else {
+                            debug!(
+                                ?error,
+                                ?payload,
+                                action = "returning Some(Err(err))",
+                                "failed to deserialize WebSocket Message into domain specific Message"
+                            );
+                            Some(Err(SocketError::Deserialise { error, payload }))
+                        }
+                    }
+                },
+                // Reuse the parsers from barter-integration
+                WsMessage::Binary(binary) => process_binary(binary),
+                WsMessage::Ping(ping) => process_ping(ping),
+                WsMessage::Pong(pong) => process_pong(pong),
+                WsMessage::Close(close_frame) => process_close_frame(close_frame),
+                WsMessage::Frame(frame) => process_frame(frame),
+            },
+            Err(ws_err) => Some(Err(SocketError::WebSocket(ws_err))),
+        }
+    }
+}
+
 impl<Instrument> StreamSelector<Instrument, PublicTrades> for Okx
 where
     Instrument: InstrumentData,
 {
-    type Stream =
-        ExchangeWsStream<StatelessTransformer<Self, Instrument::Id, PublicTrades, OkxTrades>>;
+    type Stream = ExchangeStream<
+        OkxWebSocketParser,
+        WsStream,
+        StatelessTransformer<Self, Instrument::Id, PublicTrades, OkxTrades>,
+    >;
 }
