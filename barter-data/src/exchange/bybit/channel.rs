@@ -1,6 +1,7 @@
 use crate::{
     exchange::bybit::Bybit,
     subscription::{
+        aggregated_trade::PublicAggregatedTrades,
         book::{OrderBooksL1, OrderBooksL2},
         liquidation::Liquidations,
         trade::PublicTrades,
@@ -33,6 +34,14 @@ impl BybitChannel {
 
 impl<Server, Instrument> Identifier<BybitChannel>
     for Subscription<Bybit<Server>, Instrument, PublicTrades>
+{
+    fn id(&self) -> BybitChannel {
+        BybitChannel::TRADES
+    }
+}
+
+impl<Server, Instrument> Identifier<BybitChannel>
+    for Subscription<Bybit<Server>, Instrument, PublicAggregatedTrades>
 {
     fn id(&self) -> BybitChannel {
         BybitChannel::TRADES

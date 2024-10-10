@@ -1,6 +1,7 @@
 use super::Okx;
 use crate::{
     subscription::{
+        aggregated_trade::PublicAggregatedTrades,
         book::{OrderBooksL1, OrderBooksL2},
         trade::PublicTrades,
         Subscription,
@@ -34,6 +35,12 @@ impl OkxChannel {
 }
 
 impl<Instrument> Identifier<OkxChannel> for Subscription<Okx, Instrument, PublicTrades> {
+    fn id(&self) -> OkxChannel {
+        OkxChannel::TRADES
+    }
+}
+
+impl<Instrument> Identifier<OkxChannel> for Subscription<Okx, Instrument, PublicAggregatedTrades> {
     fn id(&self) -> OkxChannel {
         OkxChannel::TRADES
     }

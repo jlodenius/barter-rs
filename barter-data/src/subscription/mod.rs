@@ -32,6 +32,9 @@ pub mod liquidation;
 /// Public trade [`SubscriptionKind`] and the associated Barter output data model.
 pub mod trade;
 
+/// Public aggregated trade [`SubscriptionKind`] and the associated Barter output data model.
+pub mod aggregated_trade;
+
 /// Defines the type of a [`Subscription`], and the output [`Self::Event`] that it yields.
 pub trait SubscriptionKind
 where
@@ -56,6 +59,7 @@ pub struct Subscription<Exchange = ExchangeId, Inst = Instrument, Kind = SubKind
 )]
 pub enum SubKind {
     PublicTrades,
+    PublicAggregatedTrades,
     OrderBooksL1,
     OrderBooksL2,
     OrderBooksL3,

@@ -1,7 +1,7 @@
 use crate::{
     event::{MarketEvent, MarketIter},
     exchange::{ExchangeId, ExchangeSub},
-    subscription::trade::PublicTrade,
+    subscription::{aggregated_trade::PublicAggregatedTrade, trade::PublicTrade},
     Identifier,
 };
 use barter_integration::model::{Exchange, Side, SubscriptionId};
@@ -113,6 +113,39 @@ impl<InstrumentId: Clone> From<(ExchangeId, InstrumentId, OkxTrades)>
                 })
             })
             .collect()
+    }
+}
+
+impl<InstrumentId: Clone> From<(ExchangeId, InstrumentId, OkxTrades)>
+    for MarketIter<InstrumentId, PublicAggregatedTrade>
+{
+    fn from((exchange_id, instrument, trades): (ExchangeId, InstrumentId, OkxTrades)) -> Self {
+        let (total_price, total_amount, high, low) = trades.data.iter().fold(
+            (0.0, 0.0, f64::MIN, f64::MAX),
+            |(total_price, total_amount, high, low), trade| {
+                (
+                    total_price + trade.price,
+                    total_amount + trade.amount,
+                    high.max(trade.price),
+                    low.min(trade.price),
+                )
+            },
+        );
+        let time = trades.data[0].time; // All trades will have the same ts
+        let count = trades.data.len();
+
+        Self(vec![Ok(MarketEvent {
+            exchange_time: time,
+            received_time: Utc::now(),
+            exchange: Exchange::from(exchange_id),
+            instrument: instrument.clone(),
+            kind: PublicAggregatedTrade {
+                price: total_price / count as f64,
+                amount: total_amount / count as f64,
+                high,
+                low,
+            },
+        })])
     }
 }
 
