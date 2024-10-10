@@ -95,7 +95,7 @@ impl Connector for Okx {
     }
 }
 
-// Custom stream parser to handle OKX non-json plain text Pongs
+/// Custom stream parser to handle OKX non-json plain text Pongs
 #[derive(Copy, Clone, Eq, PartialEq, Ord, PartialOrd, Hash, Debug, Deserialize, Serialize)]
 pub struct OkxWebSocketParser;
 
@@ -112,7 +112,7 @@ impl StreamParser for OkxWebSocketParser {
     {
         match payload {
             Ok(ws_message) => match ws_message {
-                // Custom okx handler for Text messages, since Pong's are sent as plain text and
+                // Custom OKX handler for text payloads. Pong's are sent as plain text and
                 // are not valid json, and so can't be deserialized using serde_json.
                 WsMessage::Text(payload) => match serde_json::from_str::<Output>(&payload) {
                     Ok(value) => Some(Ok(value)),
