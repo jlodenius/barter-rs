@@ -4,7 +4,7 @@ use crate::{
         bybit::{channel::BybitChannel, subscription::BybitResponse, trade::BybitTrade},
         ExchangeId,
     },
-    subscription::trade::PublicTrade,
+    subscription::{aggregated_trade::PublicAggregatedTrade, trade::PublicTrade},
     Identifier,
 };
 use barter_integration::model::SubscriptionId;
@@ -94,6 +94,19 @@ impl Identifier<Option<SubscriptionId>> for BybitMessage<BybitTrade> {
 
 impl<InstrumentId: Clone> From<(ExchangeId, InstrumentId, BybitMessage<BybitTrade>)>
     for MarketIter<InstrumentId, PublicTrade>
+{
+    fn from(
+        (exchange_id, instrument, message): (ExchangeId, InstrumentId, BybitMessage<BybitTrade>),
+    ) -> Self {
+        match message {
+            BybitMessage::Trade(trade) => Self::from((exchange_id, instrument, trade)),
+            BybitMessage::Response(_) => Self(vec![]),
+        }
+    }
+}
+
+impl<InstrumentId: Clone> From<(ExchangeId, InstrumentId, BybitMessage<BybitTrade>)>
+    for MarketIter<InstrumentId, PublicAggregatedTrade>
 {
     fn from(
         (exchange_id, instrument, message): (ExchangeId, InstrumentId, BybitMessage<BybitTrade>),

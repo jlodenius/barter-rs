@@ -232,7 +232,11 @@ impl ExchangeId {
             (Bitfinex, Spot, PublicTrades) => true,
             (Bitmex, Perpetual, PublicTrades) => true,
             (BybitSpot, Spot, PublicTrades) => true,
-            (BybitPerpetualsUsd, Perpetual, PublicTrades | OrderBooksL1 | Liquidations) => true,
+            (
+                BybitPerpetualsUsd,
+                Perpetual,
+                PublicTrades | PublicAggregatedTrades | OrderBooksL1 | Liquidations,
+            ) => true,
             (Coinbase, Spot, PublicTrades) => true,
             (GateioSpot, Spot, PublicTrades) => true,
             (GateioFuturesUsd, Future(_), PublicTrades) => true,

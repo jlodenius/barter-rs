@@ -17,9 +17,8 @@ impl SubscriptionKind for PublicAggregatedTrades {
 ///
 /// Use case:
 /// - Aggregating Candles
-#[derive(Clone, PartialEq, PartialOrd, Debug, Deserialize, Serialize)]
+#[derive(Clone, Copy, PartialEq, PartialOrd, Debug, Deserialize, Serialize)]
 pub struct PublicAggregatedTrade {
-    pub id: String,
     pub price: f64,
     pub amount: f64,
     pub high: f64,

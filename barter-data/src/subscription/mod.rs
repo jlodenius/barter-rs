@@ -59,6 +59,7 @@ pub struct Subscription<Exchange = ExchangeId, Inst = Instrument, Kind = SubKind
 )]
 pub enum SubKind {
     PublicTrades,
+    PublicAggregatedTrades,
     OrderBooksL1,
     OrderBooksL2,
     OrderBooksL3,

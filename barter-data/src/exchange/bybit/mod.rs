@@ -9,7 +9,9 @@ use crate::{
     },
     instrument::InstrumentData,
     subscriber::{validator::WebSocketSubValidator, WebSocketSubscriber},
-    subscription::{book::OrderBooksL1, trade::PublicTrades, Map},
+    subscription::{
+        aggregated_trade::PublicAggregatedTrades, book::OrderBooksL1, trade::PublicTrades, Map,
+    },
     transformer::stateless::StatelessTransformer,
     ExchangeWsStream,
 };
@@ -120,6 +122,21 @@ where
 {
     type Stream = ExchangeWsStream<
         StatelessTransformer<Self, Instrument::Id, PublicTrades, BybitMessage<BybitTrade>>,
+    >;
+}
+
+impl<Instrument, Server> StreamSelector<Instrument, PublicAggregatedTrades> for Bybit<Server>
+where
+    Instrument: InstrumentData,
+    Server: ExchangeServer + Debug + Send + Sync,
+{
+    type Stream = ExchangeWsStream<
+        StatelessTransformer<
+            Self,
+            Instrument::Id,
+            PublicAggregatedTrades,
+            BybitMessage<BybitTrade>,
+        >,
     >;
 }
 
