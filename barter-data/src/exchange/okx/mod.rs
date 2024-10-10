@@ -5,7 +5,7 @@ use crate::{
     exchange::{Connector, ExchangeId, ExchangeSub, PingInterval, StreamSelector},
     instrument::InstrumentData,
     subscriber::{validator::WebSocketSubValidator, WebSocketSubscriber},
-    subscription::trade::PublicTrades,
+    subscription::{aggregated_trade::PublicAggregatedTrades, trade::PublicTrades},
     transformer::stateless::StatelessTransformer,
 };
 use barter_integration::{
@@ -152,5 +152,16 @@ where
         OkxWebSocketParser,
         WsStream,
         StatelessTransformer<Self, Instrument::Id, PublicTrades, OkxTrades>,
+    >;
+}
+
+impl<Instrument> StreamSelector<Instrument, PublicAggregatedTrades> for Okx
+where
+    Instrument: InstrumentData,
+{
+    type Stream = ExchangeStream<
+        OkxWebSocketParser,
+        WsStream,
+        StatelessTransformer<Self, Instrument::Id, PublicAggregatedTrades, OkxTrades>,
     >;
 }
