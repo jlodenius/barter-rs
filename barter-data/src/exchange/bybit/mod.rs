@@ -18,6 +18,7 @@ use book::l1::BybitOrderBookL1;
 use serde::de::{Error, Unexpected};
 use std::{fmt::Debug, marker::PhantomData, time::Duration};
 use tokio::time;
+use trade::BybitTrade;
 use url::Url;
 
 /// OrderBook types common to both [`BybitSpot`](spot::BybitSpot) and
@@ -117,8 +118,9 @@ where
     Instrument: InstrumentData,
     Server: ExchangeServer + Debug + Send + Sync,
 {
-    type Stream =
-        ExchangeWsStream<StatelessTransformer<Self, Instrument::Id, PublicTrades, BybitMessage>>;
+    type Stream = ExchangeWsStream<
+        StatelessTransformer<Self, Instrument::Id, PublicTrades, BybitMessage<BybitTrade>>,
+    >;
 }
 
 impl<Instrument, Server> StreamSelector<Instrument, OrderBooksL1> for Bybit<Server>
@@ -127,7 +129,7 @@ where
     Server: ExchangeServer + Debug + Send + Sync,
 {
     type Stream = ExchangeWsStream<
-        StatelessTransformer<Self, Instrument::Id, OrderBooksL1, BybitOrderBookL1>,
+        StatelessTransformer<Self, Instrument::Id, OrderBooksL1, BybitMessage<BybitOrderBookL1>>,
     >;
 }
 

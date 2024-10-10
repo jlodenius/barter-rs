@@ -17,9 +17,9 @@ use serde::{
 /// [`Bybit`](super::Bybit) websocket message supports both [`BybitTrade`](BybitTrade) and [`BybitResponse`](BybitResponse) .
 #[derive(Debug, Serialize, Deserialize)]
 #[serde(untagged)]
-pub enum BybitMessage {
+pub enum BybitMessage<T> {
+    Trade(T),
     Response(BybitResponse),
-    Trade(BybitTrade),
 }
 
 /// ### Raw Payload Examples
@@ -83,7 +83,7 @@ where
     }
 }
 
-impl Identifier<Option<SubscriptionId>> for BybitMessage {
+impl Identifier<Option<SubscriptionId>> for BybitMessage<BybitTrade> {
     fn id(&self) -> Option<SubscriptionId> {
         match self {
             BybitMessage::Trade(trade) => Some(trade.subscription_id.clone()),
@@ -92,13 +92,15 @@ impl Identifier<Option<SubscriptionId>> for BybitMessage {
     }
 }
 
-impl<InstrumentId: Clone> From<(ExchangeId, InstrumentId, BybitMessage)>
+impl<InstrumentId: Clone> From<(ExchangeId, InstrumentId, BybitMessage<BybitTrade>)>
     for MarketIter<InstrumentId, PublicTrade>
 {
-    fn from((exchange_id, instrument, message): (ExchangeId, InstrumentId, BybitMessage)) -> Self {
+    fn from(
+        (exchange_id, instrument, message): (ExchangeId, InstrumentId, BybitMessage<BybitTrade>),
+    ) -> Self {
         match message {
-            BybitMessage::Response(_) => Self(vec![]),
             BybitMessage::Trade(trade) => Self::from((exchange_id, instrument, trade)),
+            BybitMessage::Response(_) => Self(vec![]),
         }
     }
 }
