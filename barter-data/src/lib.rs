@@ -95,7 +95,10 @@ use crate::{
 };
 use async_trait::async_trait;
 use barter_integration::{
-    protocol::websocket::{WebSocketParser, WsMessage, WsSink, WsStream},
+    protocol::{
+        websocket::{WebSocket, WebSocketParser, WsError, WsMessage, WsSink, WsStream},
+        StreamParser,
+    },
     ExchangeStream,
 };
 use futures::{SinkExt, Stream, StreamExt};
@@ -172,12 +175,13 @@ where
 }
 
 #[async_trait]
-impl<Exchange, Instrument, Kind, Transformer> MarketStream<Exchange, Instrument, Kind>
-    for ExchangeWsStream<Transformer>
+impl<Exchange, Instrument, Kind, Parser, Transformer> MarketStream<Exchange, Instrument, Kind>
+    for ExchangeStream<Parser, WsStream, Transformer>
 where
     Exchange: Connector + Send + Sync,
     Instrument: InstrumentData,
     Kind: SubscriptionKind + Send + Sync,
+    Parser: StreamParser<Stream = WebSocket, Message = WsMessage, Error = WsError> + Send + Sync,
     Transformer: ExchangeTransformer<Exchange, Instrument::Id, Kind> + Send,
     Kind::Event: Send,
 {
@@ -214,7 +218,7 @@ where
         // Construct Transformer associated with this Exchange and SubscriptionKind
         let transformer = Transformer::new(ws_sink_tx, map).await?;
 
-        Ok(ExchangeWsStream::new(ws_stream, transformer))
+        Ok(ExchangeStream::new(ws_stream, transformer))
     }
 }
 
